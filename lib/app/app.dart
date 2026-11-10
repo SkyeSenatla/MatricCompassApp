@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:matric_compass/app/app_config.dart';
-import 'package:matric_compass/app/home_placeholder.dart';
+import 'package:matric_compass/features/dashboard/presentation/dashboard_screen.dart';
 
 /// Week 10 Day 1: the app shell. Day 3 swaps `home` for go_router.
 class MatricCompassApp extends StatelessWidget {
@@ -26,7 +26,8 @@ class MatricCompassApp extends StatelessWidget {
           child: child,
         ),
       },
-      home: HomePlaceholder(config: config),
+      // Week 10 Day 2: the learner dashboard replaces the placeholder.
+      home: const DashboardScreen(),
     );
   }
 }
