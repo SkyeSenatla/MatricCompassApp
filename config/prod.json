@@ -1,0 +1,5 @@
+{
+  "FLAVOR": "prod",
+  "API_BASE_URL": "https://prod.invalid",
+  "SENTRY_DSN": ""
+}

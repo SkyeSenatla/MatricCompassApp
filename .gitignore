@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Week 10 Day 1: generated code isn't committed; CI and build_runner make it.
+*.g.dart
+*.freezed.dart

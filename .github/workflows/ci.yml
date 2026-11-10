@@ -1,0 +1,42 @@
+# Week 10 Day 1: every push to main and every pull request is checked on a
+# clean Linux machine, with the same Flutter as every laptop in the class.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    name: Format, generate, analyze, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - name: Install
+        run: flutter pub get
+
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed .
+
+      # Generated files aren't committed, so they're made before the
+      # analyser runs: it can't check code that refers to them otherwise.
+      - name: Generate code
+        run: dart run build_runner build
+
+      # dart analyze, not flutter analyze: only dart analyze runs analyser
+      # plugins such as riverpod_lint. --fatal-infos: very_good_analysis
+      # reports most rules as infos, and a finding nobody has to fix is a
+      # finding nobody reads.
+      - name: Analyze
+        run: dart analyze --fatal-infos
+
+      - name: Test
+        run: flutter test
