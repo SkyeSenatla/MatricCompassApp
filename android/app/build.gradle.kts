@@ -38,15 +38,18 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             manifestPlaceholders["appName"] = "MC Dev"
+            manifestPlaceholders["deepLinkScheme"] = "matriccompass-dev"
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             manifestPlaceholders["appName"] = "MC Staging"
+            manifestPlaceholders["deepLinkScheme"] = "matriccompass-staging"
         }
         create("prod") {
             dimension = "environment"
             manifestPlaceholders["appName"] = "Matric Compass"
+            manifestPlaceholders["deepLinkScheme"] = "matriccompass"
         }
     }
 

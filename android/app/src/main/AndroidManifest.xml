@@ -24,6 +24,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Week 10 Day 3: deep links. A custom scheme per flavour, so the
+                 dev, staging and prod apps never claim each other's links.
+                 matriccompass-dev://app/bursaries/<id> opens that address.
+                 An https App Link needs a domain we control (assetlinks.json
+                 naming each flavour's id and signing key): theory for now. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="true" />
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${deepLinkScheme}" android:host="app" />
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

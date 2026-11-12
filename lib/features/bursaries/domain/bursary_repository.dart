@@ -4,6 +4,10 @@ import 'package:matric_compass/features/bursaries/domain/bursary_application.dar
 abstract interface class BursaryRepository {
   /// The application, or a [BursaryNotFoundException].
   Future<BursaryApplication> fetchById(String id);
+
+  /// Week 10 Day 3: the staff Applications tab. Every application that is
+  /// waiting for a counsellor: submitted or under review.
+  Future<List<BursaryApplication>> fetchForReview();
 }
 
 /// "Doesn't exist" and "isn't yours" look the same, as the API's 404 does.

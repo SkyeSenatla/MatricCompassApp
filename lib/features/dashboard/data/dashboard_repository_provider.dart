@@ -1,3 +1,4 @@
+import 'package:matric_compass/core/fakes/fake_latency_provider.dart';
 import 'package:matric_compass/features/dashboard/data/fake_dashboard_repository.dart';
 import 'package:matric_compass/features/dashboard/domain/dashboard_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -10,4 +11,5 @@ part 'dashboard_repository_provider.g.dart';
 /// keepAlive: a repository holds no screen's state, and rebuilding it on
 /// every visit would buy nothing.
 @Riverpod(keepAlive: true)
-DashboardRepository dashboardRepository(Ref ref) => FakeDashboardRepository();
+DashboardRepository dashboardRepository(Ref ref) =>
+    FakeDashboardRepository(latency: ref.watch(fakeLatencyProvider));

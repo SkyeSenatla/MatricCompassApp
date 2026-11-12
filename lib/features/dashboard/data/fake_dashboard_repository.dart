@@ -11,7 +11,7 @@ final class FakeDashboardRepository implements DashboardRepository {
     List<BursaryApplication>? applications,
     this.latency = const Duration(milliseconds: 800),
     DateTime Function()? clock,
-  }) : _applications = applications ?? Seed.applications,
+  }) : _applications = applications ?? Seed.thandiweApplications,
        _clock = clock ?? DateTime.now;
 
   final List<BursaryApplication> _applications;

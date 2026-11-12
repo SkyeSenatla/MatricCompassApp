@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:matric_compass/app/router/routes.dart';
 import 'package:matric_compass/core/money/format_rands.dart';
-import 'package:matric_compass/features/bursaries/presentation/bursary_detail_screen.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_status_label.dart';
 import 'package:matric_compass/features/dashboard/domain/learner_dashboard.dart';
 import 'package:matric_compass/features/dashboard/presentation/dashboard_controller.dart';
@@ -164,12 +164,9 @@ class _BursaryCard extends StatelessWidget {
           '(${summary.daysUntilDeadline} days)',
         ),
         trailing: Text(formatRands(summary.amount)),
-        // Day 3 replaces this with a typed go_router route.
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => BursaryDetailScreen(id: summary.id),
-          ),
-        ),
+        // Week 10 Day 3: go to the application's address. It opens on the
+        // Bursaries tab, with the list underneath, so back makes sense.
+        onTap: () => BursaryDetailRoute(id: summary.id).go(context),
       ),
     );
   }

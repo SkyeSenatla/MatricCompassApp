@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matric_compass/app/app_config.dart';
-import 'package:matric_compass/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:matric_compass/app/router/router_provider.dart';
+import 'package:matric_compass/app/theme/app_theme.dart';
 
-/// Week 10 Day 1: the app shell. Day 3 swaps `home` for go_router.
-class MatricCompassApp extends StatelessWidget {
+/// Week 10 Day 1: the app shell.
+///
+/// Week 10 Day 3: `home` becomes go_router, and one theme becomes two. The
+/// phone's setting picks light or dark; nothing in a widget changes.
+class MatricCompassApp extends ConsumerWidget {
   /// Creates the app for one flavour's [config].
   const new({required this.config, super.key});
 
@@ -11,11 +16,13 @@ class MatricCompassApp extends StatelessWidget {
   final AppConfig config;
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
       title: 'Matric Compass',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF1B5E20)),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      routerConfig: ref.watch(routerProvider),
       // A corner banner on every non-prod build, so a screenshot always
       // says which API it came from.
       builder: (context, child) => switch (config.flavor) {
@@ -26,8 +33,6 @@ class MatricCompassApp extends StatelessWidget {
           child: child,
         ),
       },
-      // Week 10 Day 2: the learner dashboard replaces the placeholder.
-      home: const DashboardScreen(),
     );
   }
 }
