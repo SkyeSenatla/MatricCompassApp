@@ -1,7 +1,6 @@
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_application.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_repository.dart';
-import 'package:matric_compass/features/bursaries/domain/bursary_status.dart';
 
 /// Week 10 Day 2: applications from memory. An unknown id is "not found",
 /// as the API's 404 is for someone else's application.
@@ -45,9 +44,7 @@ final class FakeBursaryRepository implements BursaryRepository {
     await Future<void>.delayed(latency);
     return [
       for (final application in _applications)
-        if (_visible(application) &&
-            (application.status == BursaryStatus.submitted ||
-                application.status == BursaryStatus.underReview))
+        if (_visible(application) && application.status.isWaitingForReview)
           application,
     ];
   }

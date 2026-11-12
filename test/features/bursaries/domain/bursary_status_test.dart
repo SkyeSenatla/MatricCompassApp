@@ -37,4 +37,24 @@ void main() {
       expect(TertiaryStatus.fromApi('Deferred'), TertiaryStatus.unknown);
     });
   });
+
+  // Week 10 Day 4: the rule the staff Applications tab uses, moved from the
+  // fake into the domain as an exhaustive switch.
+  group('BursaryStatus.isWaitingForReview', () {
+    test('submitted and under review are waiting', () {
+      expect(BursaryStatus.submitted.isWaitingForReview, isTrue);
+      expect(BursaryStatus.underReview.isWaitingForReview, isTrue);
+    });
+
+    test('every other status is not', () {
+      for (final status in [
+        BursaryStatus.draft,
+        BursaryStatus.approved,
+        BursaryStatus.rejected,
+        BursaryStatus.unknown,
+      ]) {
+        expect(status.isWaitingForReview, isFalse, reason: status.name);
+      }
+    });
+  });
 }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:matric_compass/app/theme/app_theme.dart';
 import 'package:matric_compass/app/theme/status_colors.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_status.dart';
+import 'package:matric_compass/features/careers/domain/tertiary_status.dart';
 
 /// WCAG 2's contrast ratio between two colours, from 1:1 to 21:1.
 double contrast(Color a, Color b) {
@@ -32,6 +33,14 @@ void main() {
     for (final status in BursaryStatus.values) {
       test('$name: ${status.name} text is at least 4.5:1', () {
         final pair = colors.of(status);
+        expect(contrast(pair.foreground, pair.background), greaterThan(4.5));
+      });
+    }
+    // Week 10 Day 4: the university stages reuse these pairs; every one
+    // is checked too, so a new stage can't skip it.
+    for (final status in TertiaryStatus.values) {
+      test('$name: tertiary ${status.name} text is at least 4.5:1', () {
+        final pair = colors.ofTertiary(status);
         expect(contrast(pair.foreground, pair.background), greaterThan(4.5));
       });
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_status.dart';
+import 'package:matric_compass/features/careers/domain/tertiary_status.dart';
 
 /// One status's colours: a background and the text on it.
 @immutable
@@ -122,6 +123,18 @@ final class StatusColors extends ThemeExtension<StatusColors> {
     BursaryStatus.approved => approved,
     BursaryStatus.rejected => rejected,
     BursaryStatus.unknown => unknown,
+  };
+
+  /// Week 10 Day 4: the colours for a university application's [status].
+  /// No new colours: each stage reuses a measured pair by meaning, so the
+  /// contrast test still covers it. Exhaustive: a new stage needs a colour.
+  StatusColor ofTertiary(TertiaryStatus status) => switch (status) {
+    TertiaryStatus.researching => draft,
+    TertiaryStatus.applied || TertiaryStatus.documentsSubmitted => submitted,
+    TertiaryStatus.offered => underReview,
+    TertiaryStatus.accepted => approved,
+    TertiaryStatus.rejected => rejected,
+    TertiaryStatus.unknown => unknown,
   };
 
   @override

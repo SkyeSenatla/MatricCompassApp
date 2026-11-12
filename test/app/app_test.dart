@@ -312,6 +312,22 @@ void main() {
     }
   });
 
+  testWidgets('Careers: her tests and applications, in the learner shell', (
+    tester,
+  ) async {
+    final container = await _pumpApp(
+      tester,
+      signedInAs: FakePersonas.thandiwe.email,
+    );
+
+    await tester.tap(_tab('Careers'));
+    await tester.pumpAndSettle();
+
+    expect(_location(container), '/careers');
+    expect(find.text('Career Interest Inventory'), findsOneWidget);
+    expect(find.text('University of Pretoria'), findsOneWidget);
+  });
+
   testWidgets('dark mode reads the dark status colours', (tester) async {
     await _pumpApp(
       tester,
