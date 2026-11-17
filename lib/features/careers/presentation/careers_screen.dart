@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:matric_compass/app/theme/app_tokens.dart';
+import 'package:matric_compass/app/widgets/failure_view.dart';
 import 'package:matric_compass/features/careers/domain/aptitude_test.dart';
 import 'package:matric_compass/features/careers/domain/tertiary_application.dart';
 import 'package:matric_compass/features/careers/presentation/careers_overview_provider.dart';
@@ -33,9 +34,9 @@ class CareersScreen extends ConsumerWidget {
               'No aptitude tests or university applications yet. '
               'When you have some, they will show here.',
         ),
-        CareersFailure() => _Message(
-          icon: Icons.cloud_off_outlined,
-          text: "We couldn't load your careers.",
+        CareersFailure(:final error) => FailureView(
+          title: "We couldn't load your careers.",
+          error: error,
           onRetry: () => ref.invalidate(careersOverviewProvider),
         ),
         CareersData(:final overview) => LayoutBuilder(
@@ -160,12 +161,13 @@ class _ApplicationsSection extends StatelessWidget {
   }
 }
 
+// Week 11 Day 1: only the empty state uses this now; failures use the
+// shared FailureView.
 class _Message extends StatelessWidget {
-  const new({required this.icon, required this.text, this.onRetry});
+  const new({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
-  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -178,10 +180,6 @@ class _Message extends StatelessWidget {
             Icon(icon, size: 48),
             const SizedBox(height: AppTokens.space3),
             Text(text, textAlign: TextAlign.center),
-            if (onRetry case final retry?) ...[
-              const SizedBox(height: AppTokens.space3),
-              FilledButton(onPressed: retry, child: const Text('Try again')),
-            ],
           ],
         ),
       ),

@@ -26,6 +26,19 @@ jobs:
       - name: Format
         run: dart format --output=none --set-exit-if-changed .
 
+      # Week 11 Day 1: the drift check. Generate the client again from the
+      # committed contract copy; any difference from the committed client
+      # means someone changed one without the other. Deleting first matters:
+      # the generator doesn't remove files it no longer writes.
+      - name: Client matches the contract
+        run: |
+          rm -rf lib/core/api/generated
+          dart run swagger_parser
+          dart format lib/core/api/generated
+          # Changed files, then files the committed client doesn't have.
+          git diff --exit-code -- lib/core/api/generated
+          test -z "$(git ls-files --others --exclude-standard lib/core/api/generated)"
+
       # Generated files aren't committed, so they're made before the
       # analyser runs: it can't check code that refers to them otherwise.
       - name: Generate code

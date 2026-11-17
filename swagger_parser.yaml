@@ -1,0 +1,31 @@
+# Week 11 Day 1: generate the API client from the committed contract copy.
+#
+#   dart run swagger_parser
+#   dart run build_runner build
+#
+# The generated .dart files are committed, so CI can generate them again and
+# fail on any difference (the drift check). Their .g.dart parts are not.
+swagger_parser:
+  schema_path: contract/openapi/v1.json
+  output_directory: lib/core/api/generated
+  language: dart
+  json_serializer: json_serializable
+  root_client: true
+  root_client_name: MatricCompassApi
+  put_clients_in_folder: true
+  export_file: true
+  mark_files_as_generated: true
+  # Only the endpoints the app calls. The document download returns a file,
+  # which this generator version gets wrong (File.fromJson doesn't exist);
+  # Week 12's uploads add documents deliberately.
+  include_paths:
+    - /api/v1/auth/**
+    - /api/v1/me
+    - /api/v1/me/dashboard
+    - /api/v1/bursary-applications
+    - /api/v1/bursary-applications/{id}
+    - /api/v1/bursary-applications/{id}/submit
+    - /api/v1/aptitude-tests
+    - /api/v1/tertiary-applications
+    - /api/v1/Students
+    - /api/v1/Students/{id}

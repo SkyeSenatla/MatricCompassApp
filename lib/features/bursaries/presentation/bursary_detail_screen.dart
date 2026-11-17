@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:matric_compass/app/widgets/failure_view.dart';
+import 'package:matric_compass/core/errors/failure.dart';
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/money/format_rands.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_application.dart';
-import 'package:matric_compass/features/bursaries/domain/bursary_repository.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_workflow.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_application_provider.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_status_chip.dart';
+import 'package:matric_compass/features/bursaries/presentation/bursary_submission.dart';
 
 /// Week 10 Day 2: one application, from the family provider.
 ///
 /// Week 10 Day 3: it is reached by its address, /bursaries/:id, so a deep
 /// link or a push notification can open it from a cold start. It needs
 /// only the id. Staff see it too, at /staff/applications/:id.
+///
+/// Week 11 Day 1: "not found" is the API's 404 as a NotFoundFailure, other
+/// failures show the shared FailureView, and Submit is real.
 class BursaryDetailScreen extends ConsumerWidget {
   /// Creates the screen for application [id].
   const new({required this.id, this.forLearner = true, super.key});
@@ -26,6 +32,25 @@ class BursaryDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final application = ref.watch(bursaryApplicationProvider(id));
+    final submitting = ref.watch(bursarySubmissionProvider(id));
+
+    Future<void> submit() async {
+      final messenger = ScaffoldMessenger.of(context);
+      final result = await ref
+          .read(bursarySubmissionProvider(id).notifier)
+          .submit();
+      // The API decided. 422 and 409 carry its own sentence in `detail`.
+      switch (result) {
+        case Ok():
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Submitted. Your counsellor will review it.'),
+            ),
+          );
+        case Err(:final failure):
+          showFailureSnackBar(messenger, failure);
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Bursary application')),
@@ -33,13 +58,16 @@ class BursaryDetailScreen extends ConsumerWidget {
         AsyncData(:final value) => _Details(
           application: value,
           forLearner: forLearner,
+          onSubmit: submitting ? null : submit,
         ),
         // "Not yours" and "doesn't exist" read the same, as the API's 404.
-        AsyncError(error: BursaryNotFoundException()) => const Center(
+        AsyncError(error: NotFoundFailure()) => const Center(
           child: Text('Application not found.'),
         ),
-        AsyncError() => const Center(
-          child: Text("We couldn't load this application."),
+        AsyncError(:final error) => FailureView(
+          title: "We couldn't load this application.",
+          error: error,
+          onRetry: () => ref.invalidate(bursaryApplicationProvider(id)),
         ),
         AsyncLoading() => const Center(child: CircularProgressIndicator()),
       },
@@ -48,10 +76,17 @@ class BursaryDetailScreen extends ConsumerWidget {
 }
 
 class _Details extends StatelessWidget {
-  const new({required this.application, required this.forLearner});
+  const new({
+    required this.application,
+    required this.forLearner,
+    required this.onSubmit,
+  });
 
   final BursaryApplication application;
   final bool forLearner;
+
+  /// Null while a submit is on its way: the button is disabled.
+  final VoidCallback? onSubmit;
 
   static final DateFormat _date = DateFormat('d MMM y');
 
@@ -82,8 +117,21 @@ class _Details extends StatelessWidget {
           else
             Wrap(
               spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                for (final action in actions) Chip(label: Text(action.label)),
+                for (final action in actions)
+                  switch (action) {
+                    // Week 11 Day 1: the one action that calls the API so
+                    // far. The others arrive with Week 11 Day 4's forms.
+                    LearnerAction.submit => FilledButton(
+                      onPressed: onSubmit,
+                      child: Text(action.label),
+                    ),
+                    LearnerAction.edit || LearnerAction.uploadDocuments => Chip(
+                      label: Text(action.label),
+                    ),
+                  },
               ],
             ),
         ],

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:matric_compass/core/errors/failure.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/bursaries/data/bursary_repository_provider.dart';
 import 'package:matric_compass/features/bursaries/data/fake_bursary_repository.dart';
-import 'package:matric_compass/features/bursaries/domain/bursary_repository.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_application_provider.dart';
 
 void main() {
@@ -52,7 +52,8 @@ void main() {
 
     await expectLater(
       container.read(provider.future),
-      throwsA(isA<BursaryNotFoundException>()),
+      // Week 11 Day 1: the API's 404, as a Failure.
+      throwsA(isA<NotFoundFailure>()),
     );
   });
 

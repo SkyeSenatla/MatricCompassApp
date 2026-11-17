@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matric_compass/app/theme/app_theme.dart';
 import 'package:matric_compass/app/theme/status_colors.dart';
+import 'package:matric_compass/core/errors/failure.dart';
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/careers/data/careers_repository_provider.dart';
 import 'package:matric_compass/features/careers/data/fake_careers_repository.dart';
@@ -14,12 +16,12 @@ import 'package:matric_compass/features/careers/presentation/careers_screen.dart
 /// Fails every call: the failure state.
 class _FailingRepository implements CareersRepository {
   @override
-  Future<List<AptitudeTest>> fetchAptitudeTests() =>
-      Future.error(Exception('The network is down'));
+  Future<Result<List<AptitudeTest>>> fetchAptitudeTests() async =>
+      const Err(OfflineFailure());
 
   @override
-  Future<List<TertiaryApplication>> fetchTertiaryApplications() =>
-      Future.error(Exception('The network is down'));
+  Future<Result<List<TertiaryApplication>>> fetchTertiaryApplications() async =>
+      const Err(OfflineFailure());
 }
 
 /// Pumps the Careers screen, [width] wide, with [repository] behind the

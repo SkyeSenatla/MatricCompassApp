@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Week 11 Day 1: every build talks to the API, so every build needs
+         the network. Flutter's template only adds this in debug/ and
+         profile/, so a release build could never reach the API. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="${appName}"
         android:name="${applicationName}"

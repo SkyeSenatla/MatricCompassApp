@@ -1,0 +1,7 @@
+<!-- Week 11 Day 1: the dev flavour's own manifest, merged over main's.
+     Only dev talks plain HTTP, and only to the hosts in
+     res/xml/network_security_config.xml. A staging or prod build never
+     contains this file, so it can't carry the exception. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>

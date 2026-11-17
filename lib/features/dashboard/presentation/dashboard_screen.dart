@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:matric_compass/app/router/routes.dart';
+import 'package:matric_compass/app/widgets/failure_view.dart';
 import 'package:matric_compass/core/money/format_rands.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_status_label.dart';
 import 'package:matric_compass/features/dashboard/domain/learner_dashboard.dart';
@@ -29,7 +30,12 @@ class DashboardScreen extends ConsumerWidget {
           onRefresh: controller.reload,
           child: _BursaryList(dashboard: dashboard, refreshing: refreshing),
         ),
-        DashboardFailure() => _FailureState(onRetry: controller.reload),
+        // Week 11 Day 1: the Failure's words, and a reference if it's ours.
+        DashboardFailure(:final error) => FailureView(
+          title: "We couldn't load your dashboard.",
+          error: error,
+          onRetry: controller.reload,
+        ),
       },
     );
   }
@@ -87,34 +93,6 @@ class _EmptyState extends StatelessWidget {
               style: text.bodyLarge,
               textAlign: TextAlign.center,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FailureState extends StatelessWidget {
-  const new({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 48),
-            const SizedBox(height: 16),
-            const Text(
-              "We couldn't load your dashboard.",
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),

@@ -10,7 +10,7 @@ sealed class CareersView {
   static CareersView from(AsyncValue<CareersOverview> state) => switch (state) {
     // A retry after a failure: show loading, not the old error.
     AsyncError(isLoading: true) => const CareersLoading(),
-    AsyncError() => const CareersFailure(),
+    AsyncError(:final error) => CareersFailure(error),
     AsyncData(:final value) when value.isEmpty => const CareersEmpty(),
     AsyncData(:final value) => CareersData(value),
     AsyncLoading() => const CareersLoading(),
@@ -41,5 +41,8 @@ final class CareersData extends CareersView {
 /// The load failed.
 final class CareersFailure extends CareersView {
   /// Creates the failure state.
-  const new();
+  const new(this.error);
+
+  /// What went wrong: a Failure from Week 11 Day 1.
+  final Object error;
 }

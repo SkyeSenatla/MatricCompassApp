@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:matric_compass/core/errors/failure.dart';
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/features/dashboard/data/dashboard_repository_provider.dart';
 import 'package:matric_compass/features/dashboard/data/fake_dashboard_repository.dart';
 import 'package:matric_compass/features/dashboard/domain/dashboard_repository.dart';
@@ -12,8 +14,8 @@ import 'package:matric_compass/features/dashboard/presentation/dashboard_screen.
 /// Never answers: the screen stays in its first load.
 class _NeverRepository implements DashboardRepository {
   @override
-  Future<LearnerDashboard> fetchDashboard() =>
-      Completer<LearnerDashboard>().future;
+  Future<Result<LearnerDashboard>> fetchDashboard() =>
+      Completer<Result<LearnerDashboard>>().future;
 }
 
 /// Slow, then fails once: the fake the demo swaps in through an override.
@@ -21,11 +23,12 @@ class _SlowFailingRepository implements DashboardRepository {
   bool _failedOnce = false;
 
   @override
-  Future<LearnerDashboard> fetchDashboard() async {
+  Future<Result<LearnerDashboard>> fetchDashboard() async {
     await Future<void>.delayed(const Duration(seconds: 2));
     if (!_failedOnce) {
       _failedOnce = true;
-      throw Exception('The network is down');
+      // Week 11 Day 1: repositories return a Failure, they don't throw.
+      return const Err(OfflineFailure());
     }
     return await FakeDashboardRepository(latency: Duration.zero)
         .fetchDashboard();

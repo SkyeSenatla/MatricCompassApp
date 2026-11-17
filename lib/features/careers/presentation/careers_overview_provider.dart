@@ -1,3 +1,4 @@
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/features/careers/data/careers_repository_provider.dart';
 import 'package:matric_compass/features/careers/domain/aptitude_test.dart';
 import 'package:matric_compass/features/careers/domain/tertiary_application.dart';
@@ -24,6 +25,10 @@ final class CareersOverview {
 /// futures, awaited together with `.wait`: the tab waits for the slower
 /// one, not for the two one after the other.
 ///
+/// Week 11 Day 1: both return a Result and never throw, so `.wait` can't
+/// throw a ParallelWaitError any more. The first Err is thrown as its
+/// Failure.
+///
 /// autoDispose, the codegen default: leave the tab's branch and come back
 /// later, and it fetches fresh data.
 @riverpod
@@ -34,7 +39,7 @@ Future<CareersOverview> careersOverview(Ref ref) async {
     repository.fetchTertiaryApplications(),
   ).wait;
   return CareersOverview(
-    aptitudeTests: aptitudeTests,
-    applications: applications,
+    aptitudeTests: aptitudeTests.valueOrThrow,
+    applications: applications.valueOrThrow,
   );
 }

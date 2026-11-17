@@ -1,3 +1,4 @@
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/fakes/careers_seed.dart';
 import 'package:matric_compass/features/careers/domain/aptitude_test.dart';
 import 'package:matric_compass/features/careers/domain/careers_repository.dart';
@@ -28,20 +29,22 @@ final class FakeCareersRepository implements CareersRepository {
   final Duration latency;
 
   @override
-  Future<List<AptitudeTest>> fetchAptitudeTests() async {
+  Future<Result<List<AptitudeTest>>> fetchAptitudeTests() async {
     await Future<void>.delayed(latency);
-    return [
-      for (final test in _aptitudeTests)
-        if (test.studentId == ownerId) test,
-    ]..sort((a, b) => b.dateTaken.compareTo(a.dateTaken));
+    return Ok(
+      [
+        for (final test in _aptitudeTests)
+          if (test.studentId == ownerId) test,
+      ]..sort((a, b) => b.dateTaken.compareTo(a.dateTaken)),
+    );
   }
 
   @override
-  Future<List<TertiaryApplication>> fetchTertiaryApplications() async {
+  Future<Result<List<TertiaryApplication>>> fetchTertiaryApplications() async {
     await Future<void>.delayed(latency);
-    return [
+    return Ok([
       for (final application in _tertiaryApplications)
         if (application.studentId == ownerId) application,
-    ];
+    ]);
   }
 }

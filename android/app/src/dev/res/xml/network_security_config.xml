@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Week 11 Day 1: Android 9 and later refuse plain HTTP. The laptop's API
+     is HTTP on port 5146, so the dev flavour allows exactly these hosts.
+     Everything else, in every flavour, stays HTTPS only. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- The emulator's name for the laptop. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- A real phone on the same Wi-Fi: add your laptop's LAN address,
+             for example <domain includeSubdomains="false">192.168.1.50</domain>,
+             and point config/dev.json at it. -->
+    </domain-config>
+</network-security-config>

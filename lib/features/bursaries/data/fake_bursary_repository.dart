@@ -1,6 +1,9 @@
+import 'package:matric_compass/core/errors/failure.dart';
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_application.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_repository.dart';
+import 'package:matric_compass/features/bursaries/domain/bursary_status.dart';
 
 /// Week 10 Day 2: applications from memory. An unknown id is "not found",
 /// as the API's 404 is for someone else's application.
@@ -15,7 +18,7 @@ final class FakeBursaryRepository implements BursaryRepository {
     List<BursaryApplication>? applications,
     this.latency = const Duration(milliseconds: 600),
     this.ownerId,
-  }) : _applications = applications ?? Seed.applications;
+  }) : _applications = List.of(applications ?? Seed.applications);
 
   final List<BursaryApplication> _applications;
 
@@ -29,24 +32,52 @@ final class FakeBursaryRepository implements BursaryRepository {
   int fetchCount = 0;
 
   @override
-  Future<BursaryApplication> fetchById(String id) async {
+  Future<Result<BursaryApplication>> fetchById(String id) async {
     fetchCount++;
     await Future<void>.delayed(latency);
-    for (final application in _applications) {
-      if (application.id == id && _visible(application)) return application;
-    }
-    // The same exception whether it doesn't exist or isn't yours.
-    throw BursaryNotFoundException(id);
+    // The same Failure whether it doesn't exist or isn't yours.
+    return switch (_find(id)) {
+      final application? => Ok(application),
+      null => const Err(NotFoundFailure()),
+    };
   }
 
   @override
-  Future<List<BursaryApplication>> fetchForReview() async {
+  Future<Result<List<BursaryApplication>>> fetchForReview() async {
     await Future<void>.delayed(latency);
-    return [
+    return Ok([
       for (final application in _applications)
         if (_visible(application) && application.status.isWaitingForReview)
           application,
-    ];
+    ]);
+  }
+
+  /// Week 11 Day 1: plays the API's rules that a fake can know. It has no
+  /// documents, so it never answers 422; the API test covers that.
+  @override
+  Future<Result<BursaryApplication>> submit(String id) async {
+    await Future<void>.delayed(latency);
+    final application = _find(id);
+    if (application == null) return const Err(NotFoundFailure());
+    if (application.status != BursaryStatus.draft) {
+      return const Err(
+        ConflictFailure(detail: 'This application is already submitted.'),
+      );
+    }
+    final submitted = application.copyWith(
+      status: BursaryStatus.submitted,
+      submittedAt: DateTime.now().toUtc(),
+      version: application.version + 1,
+    );
+    _applications[_applications.indexOf(application)] = submitted;
+    return Ok(submitted);
+  }
+
+  BursaryApplication? _find(String id) {
+    for (final application in _applications) {
+      if (application.id == id && _visible(application)) return application;
+    }
+    return null;
   }
 
   bool _visible(BursaryApplication application) =>

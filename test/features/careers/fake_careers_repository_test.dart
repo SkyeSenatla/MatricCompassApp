@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/careers/data/fake_careers_repository.dart';
 import 'package:matric_compass/features/careers/domain/aptitude_test.dart';
@@ -9,8 +10,9 @@ void main() {
       FakeCareersRepository(ownerId: ownerId, latency: Duration.zero);
 
   test("a learner gets her own applications, never anyone else's", () async {
-    final applications = await fakeFor(Seed.thandiweId)
-        .fetchTertiaryApplications();
+    final applications = (await fakeFor(
+      Seed.thandiweId,
+    ).fetchTertiaryApplications()).valueOrThrow;
 
     expect(applications.map((a) => a.institutionName), [
       'University of Pretoria',
@@ -22,7 +24,9 @@ void main() {
   });
 
   test('her seeded test carries the careers the API recommends', () async {
-    final tests = await fakeFor(Seed.thandiweId).fetchAptitudeTests();
+    final tests = (await fakeFor(
+      Seed.thandiweId,
+    ).fetchAptitudeTests()).valueOrThrow;
 
     expect(tests.single.score, 82);
     expect(tests.single.recommendedCareers, [
@@ -50,7 +54,7 @@ void main() {
       ],
     );
 
-    final tests = await fake.fetchAptitudeTests();
+    final tests = (await fake.fetchAptitudeTests()).valueOrThrow;
 
     expect(tests.map((t) => t.id), ['new', 'old']);
   });
@@ -58,15 +62,16 @@ void main() {
   test('nobody signed in matches nobody', () async {
     final fake = fakeFor('');
 
-    expect(await fake.fetchAptitudeTests(), isEmpty);
-    expect(await fake.fetchTertiaryApplications(), isEmpty);
+    expect((await fake.fetchAptitudeTests()).valueOrThrow, isEmpty);
+    expect((await fake.fetchTertiaryApplications()).valueOrThrow, isEmpty);
   });
 
   test(
     'a status the app does not know reaches the screen as unknown',
     () async {
-      final applications = await fakeFor(Seed.thandiweId)
-          .fetchTertiaryApplications();
+      final applications = (await fakeFor(
+        Seed.thandiweId,
+      ).fetchTertiaryApplications()).valueOrThrow;
 
       expect(
         applications.map((a) => a.status),

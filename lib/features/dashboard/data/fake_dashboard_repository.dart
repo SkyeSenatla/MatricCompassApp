@@ -1,3 +1,4 @@
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_application.dart';
 import 'package:matric_compass/features/dashboard/domain/dashboard_repository.dart';
@@ -21,23 +22,25 @@ final class FakeDashboardRepository implements DashboardRepository {
   final Duration latency;
 
   @override
-  Future<LearnerDashboard> fetchDashboard() async {
+  Future<Result<LearnerDashboard>> fetchDashboard() async {
     await Future<void>.delayed(latency);
     final today = _clock().toUtc();
-    return LearnerDashboard(
-      fullName: Seed.thandiweName,
-      bursaryApplications: [
-        for (final application in _applications)
-          BursarySummary(
-            id: application.id,
-            funder: application.funder,
-            status: application.status,
-            deadline: application.deadline,
-            // The fake plays the server here, so it may compute this.
-            daysUntilDeadline: application.deadline.difference(today).inDays,
-            amount: application.amount,
-          ),
-      ],
+    return Ok(
+      LearnerDashboard(
+        fullName: Seed.thandiweName,
+        bursaryApplications: [
+          for (final application in _applications)
+            BursarySummary(
+              id: application.id,
+              funder: application.funder,
+              status: application.status,
+              deadline: application.deadline,
+              // The fake plays the server here, so it may compute this.
+              daysUntilDeadline: application.deadline.difference(today).inDays,
+              amount: application.amount,
+            ),
+        ],
+      ),
     );
   }
 }

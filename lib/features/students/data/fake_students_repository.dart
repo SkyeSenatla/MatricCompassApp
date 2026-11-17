@@ -1,3 +1,5 @@
+import 'package:matric_compass/core/errors/failure.dart';
+import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/students/domain/student.dart';
 import 'package:matric_compass/features/students/domain/students_repository.dart';
@@ -30,25 +32,27 @@ final class FakeStudentsRepository implements StudentsRepository {
   ];
 
   @override
-  Future<List<Student>> fetchAll() async {
+  Future<Result<List<Student>>> fetchAll() async {
     await Future<void>.delayed(latency);
-    return _students;
+    return const Ok(_students);
   }
 
   @override
-  Future<StudentProfile> fetchById(String id) async {
+  Future<Result<StudentProfile>> fetchById(String id) async {
     await Future<void>.delayed(latency);
     for (final student in _students) {
       if (student.id == id) {
-        return StudentProfile(
-          student: student,
-          applications: [
-            for (final application in Seed.applications)
-              if (application.studentId == id) application,
-          ],
+        return Ok(
+          StudentProfile(
+            student: student,
+            applications: [
+              for (final application in Seed.applications)
+                if (application.studentId == id) application,
+            ],
+          ),
         );
       }
     }
-    throw StudentNotFoundException(id);
+    return const Err(NotFoundFailure());
   }
 }

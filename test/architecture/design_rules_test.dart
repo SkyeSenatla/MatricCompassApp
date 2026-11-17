@@ -48,4 +48,20 @@ void main() {
     expect(screens, isNotEmpty);
     expect(offenders, isEmpty, reason: 'Watch a provider instead');
   });
+
+  // Week 11 Day 1: the week's first checkpoint, "no DioException reaches a
+  // widget", as a rule. Dio and the generated client belong to data and
+  // core; presentation and domain see Failures and domain types only.
+  test('no presentation or domain file imports Dio or the generated API', () {
+    final offenders = [
+      for (final file in dartFiles('lib/features'))
+        if ((name(file).contains('/presentation/') ||
+                name(file).contains('/domain/')) &&
+            (file.readAsStringSync().contains('package:dio/') ||
+                file.readAsStringSync().contains('core/api/generated/')))
+          name(file),
+    ];
+
+    expect(offenders, isEmpty, reason: 'Go through a repository instead');
+  });
 }

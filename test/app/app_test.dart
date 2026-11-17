@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matric_compass/app/app.dart';
 import 'package:matric_compass/app/app_config.dart';
+import 'package:matric_compass/app/data_source.dart';
 import 'package:matric_compass/app/retry_policy.dart';
 import 'package:matric_compass/app/router/router_provider.dart';
 import 'package:matric_compass/app/theme/status_colors.dart';
@@ -38,12 +39,17 @@ Future<ProviderContainer> _pumpApp(
   }
 
   final container = ProviderContainer.test(
-    overrides: [fakeLatencyProvider.overrideWithValue(Duration.zero)],
+    // Week 11 Day 1: the whole app on Week 10's fakes. One override for
+    // every repository, because each one switches on the data source.
+    overrides: [
+      dataSourceProvider.overrideWithValue(DataSource.fake),
+      fakeLatencyProvider.overrideWithValue(Duration.zero),
+    ],
     // The app's own policy, as main() uses it.
     retry: appRetryPolicy,
   );
   if (signedInAs != null) {
-    container.read(authControllerProvider.notifier).signIn(signedInAs);
+    await container.read(authControllerProvider.notifier).signIn(signedInAs);
   }
   await tester.pumpWidget(
     UncontrolledProviderScope(

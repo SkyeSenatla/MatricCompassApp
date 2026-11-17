@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matric_compass/app/router/routes.dart';
 import 'package:matric_compass/app/theme/app_tokens.dart';
+import 'package:matric_compass/app/widgets/failure_view.dart';
+import 'package:matric_compass/core/errors/failure.dart';
 import 'package:matric_compass/core/money/format_rands.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_status_chip.dart';
 import 'package:matric_compass/features/students/domain/student.dart';
-import 'package:matric_compass/features/students/domain/students_repository.dart';
 import 'package:matric_compass/features/students/presentation/students_providers.dart';
 
 /// Week 10 Day 3: one student and her applications. Used on its own on a
@@ -21,11 +22,14 @@ class StudentDetailPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return switch (ref.watch(studentProvider(id))) {
       AsyncData(:final value) => _Profile(profile: value),
-      AsyncError(error: StudentNotFoundException()) => const Center(
+      // Week 11 Day 1: the API's 404, as a Failure.
+      AsyncError(error: NotFoundFailure()) => const Center(
         child: Text('Student not found.'),
       ),
-      AsyncError() => const Center(
-        child: Text("We couldn't load this student."),
+      AsyncError(:final error) => FailureView(
+        title: "We couldn't load this student.",
+        error: error,
+        onRetry: () => ref.invalidate(studentProvider(id)),
       ),
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
     };

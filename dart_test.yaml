@@ -1,0 +1,6 @@
+# Week 11 Day 1: tests tagged `live` call the real API, so a normal
+# `flutter test` (and CI) skips them. Run them against a fresh database:
+#   flutter test --run-skipped --tags live --dart-define=DEV_PASSWORD=...
+tags:
+  live:
+    skip: "Needs the API running: flutter test --run-skipped --tags live"
