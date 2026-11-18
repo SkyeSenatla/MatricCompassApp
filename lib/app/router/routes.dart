@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:matric_compass/app/router/app_shell.dart';
 import 'package:matric_compass/features/auth/presentation/profile_screen.dart';
 import 'package:matric_compass/features/auth/presentation/sign_in_screen.dart';
+import 'package:matric_compass/features/auth/presentation/splash_screen.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursaries_screen.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_detail_screen.dart';
 import 'package:matric_compass/features/careers/presentation/careers_screen.dart';
@@ -20,6 +21,21 @@ part 'routes.g.dart';
 // The detail routes sit under their lists, so going to a detail's address
 // builds the list underneath it: back has somewhere sensible to go, even
 // after a cold start from a deep link.
+
+/// Week 11 Day 2: shown while the session is restored on launch. [from] is
+/// where the person was going (a deep link), kept for after.
+@TypedGoRoute<SplashRoute>(path: '/splash')
+class SplashRoute extends GoRouteData with $SplashRoute {
+  /// Creates the route.
+  const new({this.from});
+
+  /// The address to go on to once the session is restored.
+  final String? from;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const SplashScreen();
+}
 
 /// Sign-in. [from] is where the person was going when the redirect stopped
 /// them; the redirect only ever goes on to an address inside the app.

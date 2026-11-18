@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matric_compass/app/app.dart';
 import 'package:matric_compass/app/app_config.dart';
+import 'package:matric_compass/app/app_config_provider.dart';
 import 'package:matric_compass/app/data_source.dart';
 import 'package:matric_compass/app/retry_policy.dart';
 import 'package:matric_compass/app/router/router_provider.dart';
@@ -11,7 +12,10 @@ import 'package:matric_compass/core/fakes/fake_latency_provider.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/auth/data/fake_personas.dart';
 import 'package:matric_compass/features/auth/presentation/auth_controller.dart';
+import 'package:matric_compass/features/careers/presentation/careers_overview_provider.dart';
+import 'package:matric_compass/features/dashboard/presentation/dashboard_controller.dart';
 
+const _config = AppConfig(flavor: Flavor.prod, apiBaseUrl: 'https://x');
 const _phone = Size(400, 800);
 const _tabletUpright = Size(700, 1000);
 const _tabletOnItsSide = Size(1000, 700);
@@ -44,19 +48,23 @@ Future<ProviderContainer> _pumpApp(
     overrides: [
       dataSourceProvider.overrideWithValue(DataSource.fake),
       fakeLatencyProvider.overrideWithValue(Duration.zero),
+      // Week 11 Day 2: the sign-in and profile screens read the flavour,
+      // as main() provides it. Prod: no dev-only tools in these tests.
+      appConfigProvider.overrideWithValue(_config),
     ],
     // The app's own policy, as main() uses it.
     retry: appRetryPolicy,
   );
   if (signedInAs != null) {
-    await container.read(authControllerProvider.notifier).signIn(signedInAs);
+    // On fakes the password isn't checked.
+    await container
+        .read(authControllerProvider.notifier)
+        .signIn(signedInAs, 'any password');
   }
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MatricCompassApp(
-        config: AppConfig(flavor: Flavor.prod, apiBaseUrl: 'https://x'),
-      ),
+      child: const MatricCompassApp(config: _config),
     ),
   );
   await tester.pumpAndSettle();
@@ -82,6 +90,20 @@ Future<void> _go(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(NavigationBar), matching: find.text(label));
 
+/// Week 11 Day 2: signs in through the real form. On fakes any password
+/// is accepted for a seeded email.
+Future<void> _signInWithForm(WidgetTester tester, String email) async {
+  await tester.enterText(find.widgetWithText(TextFormField, 'Email'), email);
+  await tester.enterText(
+    find.widgetWithText(TextFormField, 'Password'),
+    'any password',
+  );
+  await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+  await tester.pumpAndSettle();
+}
+
+const _signInHeading = 'Welcome to Matric Compass';
+
 const _nsfas = '/bursaries/${Seed.nsfasId}';
 const _thandiweAsStaff = '/staff/students/${Seed.thandiweId}';
 
@@ -90,15 +112,14 @@ void main() {
     testWidgets('signed out, the app opens on sign-in', (tester) async {
       await _pumpApp(tester);
 
-      expect(find.text('Choose an account'), findsOneWidget);
+      expect(find.text(_signInHeading), findsOneWidget);
     });
 
     testWidgets('a link opened while signed out still arrives', (tester) async {
       final container = await _pumpApp(tester, deepLink: _nsfas);
-      expect(find.text('Choose an account'), findsOneWidget);
+      expect(find.text(_signInHeading), findsOneWidget);
 
-      await tester.tap(find.text(Seed.thandiweName));
-      await tester.pumpAndSettle();
+      await _signInWithForm(tester, FakePersonas.thandiwe.email);
 
       expect(_location(container), _nsfas);
       expect(find.text('Bursary application'), findsOneWidget);
@@ -120,8 +141,7 @@ void main() {
     testWidgets('a counsellor lands in the staff shell', (tester) async {
       final container = await _pumpApp(tester);
 
-      await tester.tap(find.text('Counsellor'));
-      await tester.pumpAndSettle();
+      await _signInWithForm(tester, FakePersonas.counsellor.email);
 
       expect(_location(container), '/staff/students');
       expect(_tab('Applications'), findsOneWidget);
@@ -140,7 +160,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(Uri.parse(_location(container)).path, '/sign-in');
-      expect(find.text('Choose an account'), findsOneWidget);
+      expect(find.text(_signInHeading), findsOneWidget);
+    });
+
+    // Week 11 Day 2's twist: a family shares one phone.
+    testWidgets('after sign-out, the next person sees nothing of hers', (
+      tester,
+    ) async {
+      final container = await _pumpApp(
+        tester,
+        signedInAs: FakePersonas.thandiwe.email,
+      );
+      await tester.tap(_tab('Bursaries'));
+      await tester.pumpAndSettle();
+      expect(find.text('NSFAS'), findsOneWidget);
+
+      await tester.tap(_tab('Profile'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sign out'));
+      await tester.pumpAndSettle();
+
+      // Her screens' state went with her session.
+      expect(container.exists(dashboardControllerProvider), isFalse);
+      expect(container.exists(careersOverviewProvider), isFalse);
+
+      await _signInWithForm(tester, FakePersonas.counsellor.email);
+      expect(find.text('NSFAS'), findsNothing);
+      expect(find.text('Ayanda Zulu'), findsOneWidget);
+      expect(_location(container), '/staff/students');
+    });
+
+    testWidgets('a wrong email is refused with words, not a crash', (
+      tester,
+    ) async {
+      await _pumpApp(tester);
+
+      await _signInWithForm(tester, 'nobody@example.test');
+
+      expect(find.text("That email and password don't match."), findsOneWidget);
+      expect(find.text(_signInHeading), findsOneWidget);
     });
   });
 

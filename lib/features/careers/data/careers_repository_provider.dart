@@ -24,7 +24,7 @@ CareersRepository careersRepository(Ref ref) {
       latency: ref.watch(fakeLatencyProvider),
       ownerId: switch (auth) {
         SignedIn(:final user) => user.studentId ?? '',
-        SignedOut() => '',
+        SignedOut() || Restoring() => '',
       },
     ),
   };

@@ -39,36 +39,51 @@ class CareersScreen extends ConsumerWidget {
           error: error,
           onRetry: () => ref.invalidate(careersOverviewProvider),
         ),
-        CareersData(:final overview) => LayoutBuilder(
-          // Inside a pane, measure the space this pane is given (Day 3):
-          // the window may be wide while a rail takes part of it.
-          builder: (context, constraints) {
-            final tests = _AptitudeSection(tests: overview.aptitudeTests);
-            final applications = _ApplicationsSection(
-              applications: overview.applications,
-            );
-            if (constraints.maxWidth >= twoColumnMinWidth) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTokens.space3),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: tests),
-                    const SizedBox(width: AppTokens.space3),
-                    Expanded(child: applications),
-                  ],
-                ),
-              );
+        // Week 11 Day 2: pull to refresh. Careers asks for two things at
+        // once, which makes it the screen where two requests meet one
+        // expired token.
+        CareersData(:final overview) => RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(careersOverviewProvider);
+            try {
+              await ref.read(careersOverviewProvider.future);
+            } on Object {
+              // The failure shows on the screen itself.
             }
-            return ListView(
-              padding: const EdgeInsets.all(AppTokens.space3),
-              children: [
-                tests,
-                const SizedBox(height: AppTokens.space4),
-                applications,
-              ],
-            );
           },
+          child: LayoutBuilder(
+            // Inside a pane, measure the space this pane is given (Day 3):
+            // the window may be wide while a rail takes part of it.
+            builder: (context, constraints) {
+              final tests = _AptitudeSection(tests: overview.aptitudeTests);
+              final applications = _ApplicationsSection(
+                applications: overview.applications,
+              );
+              if (constraints.maxWidth >= twoColumnMinWidth) {
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppTokens.space3),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: tests),
+                      const SizedBox(width: AppTokens.space3),
+                      Expanded(child: applications),
+                    ],
+                  ),
+                );
+              }
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(AppTokens.space3),
+                children: [
+                  tests,
+                  const SizedBox(height: AppTokens.space4),
+                  applications,
+                ],
+              );
+            },
+          ),
         ),
       },
     );

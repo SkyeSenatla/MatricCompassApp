@@ -28,8 +28,9 @@ BursaryRepository bursaryRepository(Ref ref) {
       ownerId: switch (auth) {
         SignedIn(:final user) when !user.role.isStaff => user.studentId,
         SignedIn() => null,
-        // Signed out sees nothing: no student has an empty id.
-        SignedOut() => '',
+        // Signed out, or not yet restored, sees nothing: no student has
+        // an empty id.
+        SignedOut() || Restoring() => '',
       },
     ),
   };

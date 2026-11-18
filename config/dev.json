@@ -1,5 +1,6 @@
 {
   "FLAVOR": "dev",
   "API_BASE_URL": "http://10.0.2.2:5146",
+  "REFRESH_COOKIE_NAME": "refresh_token",
   "SENTRY_DSN": ""
 }

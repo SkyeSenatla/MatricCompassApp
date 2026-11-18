@@ -24,6 +24,28 @@ void main() {
       );
     });
 
+    test('reads the refresh cookie name from configuration', () {
+      final config = AppConfig.parse(
+        nativeFlavor: 'dev',
+        flavorName: 'dev',
+        apiBaseUrl: 'http://10.0.2.2:5146',
+        refreshCookieName: 'rt',
+      );
+      expect(config.refreshCookieName, 'rt');
+    });
+
+    test('refuses a config file with no refresh cookie name', () {
+      expect(
+        () => AppConfig.parse(
+          nativeFlavor: 'dev',
+          flavorName: 'dev',
+          apiBaseUrl: 'http://10.0.2.2:5146',
+          refreshCookieName: '',
+        ),
+        throwsStateError,
+      );
+    });
+
     test('refuses a prod build given the dev config', () {
       expect(
         () => AppConfig.parse(

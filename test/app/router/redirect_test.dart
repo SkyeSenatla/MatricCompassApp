@@ -37,6 +37,35 @@ void main() {
     });
   });
 
+  // Week 11 Day 2: the session is being restored on launch.
+  group('restoring', () {
+    const restoring = Restoring();
+
+    test('a cold-start link waits on the splash, remembered', () {
+      final result = Uri.parse(go(restoring, '/bursaries/abc')!);
+      expect(result.path, '/splash');
+      expect(result.queryParameters['from'], '/bursaries/abc');
+    });
+
+    test('the splash itself stays, offline or not', () {
+      expect(go(restoring, '/splash'), isNull);
+      expect(go(const Restoring(offline: true), '/splash'), isNull);
+    });
+
+    test('restored: on to where they were going', () {
+      expect(go(learner, '/splash?from=%2Fbursaries%2Fabc'), '/bursaries/abc');
+      expect(go(learner, '/splash'), '/home');
+    });
+
+    test('no session after all: sign-in, still remembering', () {
+      final result = Uri.parse(
+        go(signedOut, '/splash?from=%2Fbursaries%2Fabc')!,
+      );
+      expect(result.path, '/sign-in');
+      expect(result.queryParameters['from'], '/bursaries/abc');
+    });
+  });
+
   group('signing in', () {
     test('goes on to where the learner was going', () {
       final from = const BursaryDetailRoute(id: 'abc').location;

@@ -3,7 +3,12 @@
          the network. Flutter's template only adds this in debug/ and
          profile/, so a release build could never reach the API. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Week 11 Day 2: no backup of app data. flutter_secure_storage's
+         README warns that a Google Drive backup restored onto a new phone
+         arrives without the Keystore key that unlocks it ("Failed to
+         unwrap key"). After a restore the person signs in once. -->
     <application
+        android:allowBackup="false"
         android:label="${appName}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

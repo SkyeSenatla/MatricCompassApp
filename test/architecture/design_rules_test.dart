@@ -28,7 +28,9 @@ void main() {
   test('no screen imports a data/ file: screens see providers only', () {
     // Each exception is written down with its reason and its end date.
     const allowed = {
-      // The fake sign-in lists the fake personas until Week 11 Day 2.
+      // Week 11 Day 2: the dev flavour's sign-in offers the seeded emails
+      // (never a password) from the personas. Ends when Week 12's release
+      // build drops the dev shortcuts.
       'lib/features/auth/presentation/sign_in_screen.dart',
     };
     final screens = dartFiles('lib/features').where(

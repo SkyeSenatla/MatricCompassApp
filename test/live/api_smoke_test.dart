@@ -1,12 +1,17 @@
 @Tags(['live'])
 library;
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matric_compass/app/app_config.dart';
 import 'package:matric_compass/app/app_config_provider.dart';
+import 'package:matric_compass/app/network/dio_provider.dart';
 import 'package:matric_compass/core/errors/failure.dart';
 import 'package:matric_compass/core/errors/result.dart';
+import 'package:matric_compass/core/network/access_token.dart';
+import 'package:matric_compass/core/network/refresh_token_store.dart';
+import 'package:matric_compass/features/auth/data/auth_api.dart';
 import 'package:matric_compass/features/auth/domain/auth_state.dart';
 import 'package:matric_compass/features/auth/presentation/auth_controller.dart';
 import 'package:matric_compass/features/bursaries/data/bursary_repository_provider.dart';
@@ -31,25 +36,33 @@ Failure _err<T>(Result<T> result) => switch (result) {
 ///
 /// ```text
 /// flutter test --run-skipped --tags live \
-///   --dart-define=DEV_PASSWORD=(SEED_USERS_PASSWORD from the API's .env)
+///   --dart-define=SEED_PASSWORD=(SEED_USERS_PASSWORD from the API's .env)
 /// ```
 ///
 /// API_BASE_URL defaults to the laptop's own API; this runs on the laptop,
 /// not on an emulator, so it is localhost and not 10.0.2.2.
+///
+/// Week 11 Day 2: five sign-ins in all, the API's limit per minute. Run it
+/// once, not twice in a row.
 void main() {
   const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:5146',
   );
+  const password = String.fromEnvironment('SEED_PASSWORD');
 
   late ProviderContainer container;
+  late _CountingStore store;
 
   setUp(() {
+    store = _CountingStore();
     container = ProviderContainer.test(
       overrides: [
         appConfigProvider.overrideWithValue(
           const AppConfig(flavor: Flavor.dev, apiBaseUrl: baseUrl),
         ),
+        // No Keystore on the laptop: the session's store, in memory.
+        refreshTokenStoreProvider.overrideWithValue(store),
       ],
       retry: (retryCount, error) => null,
     );
@@ -58,9 +71,68 @@ void main() {
   Future<void> signIn(String email) async {
     final result = await container
         .read(authControllerProvider.notifier)
-        .signIn(email);
+        .signIn(email, password);
     _ok(result);
   }
+
+  // Week 11 Day 2: the session against the real API.
+  group('the session', () {
+    test(
+      'three requests with a spoiled token: one refresh, all answered',
+      () async {
+        await signIn('thandiwe@matric-compass.test');
+        final writesAfterSignIn = store.writes;
+        final token = container.read(accessTokenProvider)!;
+        container
+            .read(accessTokenProvider.notifier)
+            .save('${token.value}x', expiresAt: token.expiresAt);
+
+        final careers = container.read(careersRepositoryProvider);
+        final results = await Future.wait([
+          container.read(dashboardRepositoryProvider).fetchDashboard(),
+          careers.fetchAptitudeTests(),
+          careers.fetchTertiaryApplications(),
+        ]);
+
+        for (final result in results) {
+          expect(result, isA<Ok<Object?>>());
+        }
+        // One refresh: one new refresh token stored.
+        expect(store.writes - writesAfterSignIn, 1);
+        expect(container.read(authControllerProvider), isA<SignedIn>());
+      },
+    );
+
+    test('a spent refresh token, presented again, ends the session', () async {
+      await signIn('thandiwe@matric-compass.test');
+      final first = (await store.read())!;
+      final api = AuthApi(
+        container.read(bareDioProvider),
+        cookieName: 'refresh_token',
+      );
+
+      final second = (await api.refresh(first)).refreshToken;
+      // The app presenting the spent one: what two parallel refreshes do.
+      await expectLater(api.refresh(first), throwsA(isA<DioException>()));
+      // Reuse detection revoked the newer token too.
+      await expectLater(api.refresh(second), throwsA(isA<DioException>()));
+    });
+
+    test('after sign-out, the old refresh token is dead', () async {
+      await signIn('thandiwe@matric-compass.test');
+      final stored = (await store.read())!;
+
+      await container.read(authControllerProvider.notifier).signOut();
+
+      expect(await store.read(), isNull);
+      expect(container.read(accessTokenProvider), isNull);
+      final api = AuthApi(
+        container.read(bareDioProvider),
+        cookieName: 'refresh_token',
+      );
+      await expectLater(api.refresh(stored), throwsA(isA<DioException>()));
+    });
+  });
 
   test('the learner, the counsellor, and every failure on the way', () async {
     // The counsellor finds Sipho's application: Thandiwe must not see it.
@@ -123,11 +195,30 @@ void main() {
         appConfigProvider.overrideWithValue(
           const AppConfig(flavor: Flavor.dev, apiBaseUrl: 'http://localhost:1'),
         ),
+        refreshTokenStoreProvider.overrideWithValue(_CountingStore()),
       ],
     );
     final result = await offline
         .read(authControllerProvider.notifier)
-        .signIn('thandiwe@matric-compass.test');
+        .signIn('thandiwe@matric-compass.test', password);
     expect(_err(result), isA<OfflineFailure>());
   });
+}
+
+/// An in-memory store that counts writes: one write per refresh.
+class _CountingStore implements RefreshTokenStore {
+  final _inner = InMemoryRefreshTokenStore();
+  int writes = 0;
+
+  @override
+  Future<String?> read() => _inner.read();
+
+  @override
+  Future<void> write(String token) {
+    writes++;
+    return _inner.write(token);
+  }
+
+  @override
+  Future<void> delete() => _inner.delete();
 }

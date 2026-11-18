@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: 3.4.3
+  flutter_secure_storage: 11.2.0
   freezed_annotation: 3.1.0
   go_router: 18.1.1
   intl: 0.20.3
@@ -34,3 +35,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+# Week 11 Day 2: flutter_secure_storage pulls these in for iOS and macOS.
+# pub picks their newest releases, which were under two weeks old on
+# 17 November 2026 (objective_c 9.6.4 on 11 Nov, code_assets 2.2.0 on
+# 6 Nov). Held back to the newest that were two weeks old; remove these
+# lines after 25 November 2026.
+dependency_overrides:
+  code_assets: 2.1.0
+  objective_c: 9.6.2

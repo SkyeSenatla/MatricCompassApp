@@ -6,24 +6,37 @@ import 'package:matric_compass/features/auth/domain/auth_state.dart';
 /// the sign-in state and the address, so a plain test can check every rule.
 /// It returns the address to go to instead, or null to stay.
 ///
+/// Week 11 Day 2: one new answer. While the session is being restored, the
+/// splash screen, remembering where the person was going, so a cold start
+/// from a link still arrives once the session is back.
+///
 /// A courtesy, not security: the API still refuses a learner on a staff
 /// endpoint with a 403, whatever the app does.
 String? redirectFor(AuthState auth, Uri location) {
   final path = location.path;
   final signIn = const SignInRoute().location;
+  final splash = const SplashRoute().location;
+  final from = location.queryParameters['from'];
 
   switch (auth) {
+    case Restoring():
+      if (path == splash) return null;
+      if (path == signIn) return SplashRoute(from: from).location;
+      if (path.isEmpty || path == '/') return splash;
+      return SplashRoute(from: _inApp(location)).location;
+
     case SignedOut():
       if (path == signIn) return null;
+      // Restored, and there was no session: sign in, still remembering.
+      if (path == splash) return SignInRoute(from: from).location;
       if (path.isEmpty || path == '/') return signIn;
       // Remember where they were going, as a path inside the app only.
       return SignInRoute(from: _inApp(location)).location;
 
     case SignedIn(:final user):
       final home = homeFor(user.role);
-      if (path == signIn) {
+      if (path == signIn || path == splash) {
         // Go on to where they were going, if it's safe and theirs.
-        final from = location.queryParameters['from'];
         return from != null && isSafeFor(user.role, from) ? from : home;
       }
       if (path.isEmpty || path == '/') return home;
