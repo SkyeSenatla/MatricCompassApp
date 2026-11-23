@@ -22,6 +22,7 @@ final class AppConfig {
     required this.flavor,
     required this.apiBaseUrl,
     this.refreshCookieName = 'refresh_token',
+    this.sentryDsn = '',
   });
 
   /// Reads the values the build was given, and checks them.
@@ -30,6 +31,7 @@ final class AppConfig {
     flavorName: const String.fromEnvironment('FLAVOR'),
     apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
     refreshCookieName: const String.fromEnvironment('REFRESH_COOKIE_NAME'),
+    sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
   );
 
   /// Checks the build's values. Separate from [AppConfig.fromEnvironment]
@@ -39,6 +41,7 @@ final class AppConfig {
     required String flavorName,
     required String apiBaseUrl,
     String refreshCookieName = 'refresh_token',
+    String? sentryDsn,
   }) {
     final flavor = Flavor.values.asNameMap()[flavorName];
     if (flavor == null || apiBaseUrl.isEmpty || refreshCookieName.isEmpty) {
@@ -58,6 +61,7 @@ final class AppConfig {
       flavor: flavor,
       apiBaseUrl: apiBaseUrl,
       refreshCookieName: refreshCookieName,
+      sentryDsn: sentryDsn?.trim() ?? '',
     );
   }
 
@@ -71,4 +75,13 @@ final class AppConfig {
   /// not a string scattered through the code: every RondiTrack API names
   /// its own.
   final String refreshCookieName;
+
+  /// Week 12 Day 2: where this build sends its errors, or empty for
+  /// nowhere. Each flavour has its own Sentry project, so dev's errors never
+  /// mix with production's. Not a secret (it's in the APK), but kept out of
+  /// the repo: pass it with --dart-define=SENTRY_DSN=… when you want it.
+  final String sentryDsn;
+
+  /// Whether this build reports errors at all.
+  bool get reportsErrors => sentryDsn.isNotEmpty;
 }
