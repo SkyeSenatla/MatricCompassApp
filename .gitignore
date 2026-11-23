@@ -50,3 +50,6 @@ app.*.map.json
 # Week 10 Day 1: generated code isn't committed; CI and build_runner make it.
 *.g.dart
 *.freezed.dart
+
+# Week 12 Day 1: alchemist writes failed goldens here; never commit them.
+test/**/failures/

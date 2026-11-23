@@ -4,3 +4,6 @@
 tags:
   live:
     skip: "Needs the API running: flutter test --run-skipped --tags live"
+  # Week 12 Day 1: alchemist tags every golden test. Run only them with
+  # flutter test --tags golden, or leave them out with --exclude-tags golden.
+  golden:

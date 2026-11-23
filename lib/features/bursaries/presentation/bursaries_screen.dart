@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matric_compass/app/router/routes.dart';
 import 'package:matric_compass/app/theme/app_tokens.dart';
 import 'package:matric_compass/app/widgets/stale_banner.dart';
-import 'package:matric_compass/core/money/format_rands.dart';
-import 'package:matric_compass/features/bursaries/presentation/bursary_status_chip.dart';
+import 'package:matric_compass/features/bursaries/presentation/bursary_card.dart';
 import 'package:matric_compass/features/dashboard/presentation/dashboard_cache.dart';
 import 'package:matric_compass/features/dashboard/presentation/dashboard_view.dart';
 
@@ -57,22 +56,10 @@ class BursariesScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppTokens.space3),
                   children: [
                     for (final summary in dashboard.bursaryApplications)
-                      Card(
-                        child: ListTile(
-                          title: Text(summary.funder),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(
-                              top: AppTokens.space1,
-                            ),
-                            child: Align(
-                              alignment: AlignmentDirectional.centerStart,
-                              child: BursaryStatusChip(summary.status),
-                            ),
-                          ),
-                          trailing: Text(formatRands(summary.amount)),
-                          onTap: () =>
-                              BursaryDetailRoute(id: summary.id).go(context),
-                        ),
+                      BursaryCard(
+                        summary,
+                        onTap: () =>
+                            BursaryDetailRoute(id: summary.id).go(context),
                       ),
                   ],
                 ),

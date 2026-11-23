@@ -51,5 +51,47 @@ jobs:
       - name: Analyze
         run: dart analyze --fatal-infos
 
+      # Week 12 Day 1: the same tests, now recording which lines ran.
       - name: Test
-        run: flutter test
+        run: flutter test --coverage
+
+      # Week 12 Day 1: a floor, not a goal. It stops the suite shrinking
+      # quietly: delete the test that was in the way, and CI says no. Set a
+      # little under today's number, and raised as tests are added.
+      - name: Coverage floor
+        run: dart run tool/check_coverage.dart 80
+
+  # Week 12 Day 1: the one journey, on a real Android emulator. Slow (a few
+  # minutes to boot), so it runs only after the fast checks pass.
+  journey:
+    name: Learner journey on an emulator
+    needs: app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      # From android-emulator-runner's README: lets the emulator use the
+      # runner's hardware acceleration, without which it crawls.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and generate
+        run: |
+          flutter pub get
+          dart run build_runner build
+
+      - name: Run the journey
+        uses: ReactiveCircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          script: flutter test integration_test --flavor dev --dart-define-from-file=config/dev.json
