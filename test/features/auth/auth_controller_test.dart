@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matric_compass/app/app_config.dart';
 import 'package:matric_compass/app/app_config_provider.dart';
+import 'package:matric_compass/app/database/app_database.dart';
 import 'package:matric_compass/app/network/dio_provider.dart';
 import 'package:matric_compass/core/errors/failure.dart';
 import 'package:matric_compass/core/errors/result.dart';
@@ -15,12 +16,17 @@ import 'package:matric_compass/features/auth/domain/auth_state.dart';
 import 'package:matric_compass/features/auth/presentation/auth_controller.dart';
 
 import '../../support/fake_auth_server.dart';
+import '../../support/test_database.dart';
 
 /// Week 11 Day 2: the real auth controller and session, on the API data
 /// source, against a server with the API's rules.
+///
+/// Week 11 Day 3: with the app's database in memory, read back through
+/// appDatabaseProvider.
 ProviderContainer _container(FakeAuthServer server, RefreshTokenStore store) =>
     ProviderContainer.test(
       overrides: [
+        inMemoryDatabase,
         appConfigProvider.overrideWithValue(
           const AppConfig(flavor: Flavor.dev, apiBaseUrl: 'http://api.test'),
         ),
@@ -87,6 +93,28 @@ void main() {
       expect(state, isA<Restoring>().having((s) => s.offline, 'offline', true));
       expect(await store.read(), 'refresh-1');
     });
+
+    // Week 11 Day 3: the taxi. The access token died with the app, but the
+    // phone remembers who it was, so it opens as her, on cached data.
+    test('offline, after a sign-in on this phone: open as her', () async {
+      final server = FakeAuthServer();
+      final store = InMemoryRefreshTokenStore();
+      final container = _container(server, store);
+      await _restored(container);
+      await container
+          .read(authControllerProvider.notifier)
+          .signIn('thandiwe@matric-compass.test', 'right password');
+      // The app is killed (the access token goes) and opened with no signal.
+      container.read(accessTokenProvider.notifier).clear();
+      server.offlinePaths.add('/api/v1/auth/refresh');
+
+      await container.read(authControllerProvider.notifier).restore();
+
+      final user = (container.read(authControllerProvider) as SignedIn).user;
+      expect(user.email, 'thandiwe@matric-compass.test');
+      expect(user.studentId, 'student-1');
+      expect(await store.read(), isNotNull, reason: 'still a session');
+    });
   });
 
   group('signing in and out', () {
@@ -145,6 +173,23 @@ void main() {
       expect(await store.read(), isNull);
       expect(server.requests.last.path, '/api/v1/auth/logout');
       expect(server.currentAccess, isNull);
+    });
+
+    // Week 11 Day 3: the family phone, now with a cache.
+    test('sign-out empties the database: nothing of hers is left', () async {
+      final server = FakeAuthServer();
+      final container = _container(server, InMemoryRefreshTokenStore());
+      await _restored(container);
+      await container
+          .read(authControllerProvider.notifier)
+          .signIn('thandiwe@matric-compass.test', 'right password');
+      final database = container.read(appDatabaseProvider);
+      expect(await database.sessionUserDao.read(), isNotNull);
+
+      await container.read(authControllerProvider.notifier).signOut();
+
+      expect(await database.sessionUserDao.read(), isNull);
+      expect(await database.dashboardDao.read(), isNull);
     });
 
     test('sign-out works with no network at all', () async {

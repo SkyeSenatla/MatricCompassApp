@@ -1,5 +1,6 @@
 import 'package:matric_compass/core/api/generated/matric_compass_api.dart';
 import 'package:matric_compass/core/api/generated/models/bursary_application_response.dart';
+import 'package:matric_compass/core/api/generated/models/bursary_application_update_request.dart';
 import 'package:matric_compass/core/errors/failure_mapping.dart';
 import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/money/cents.dart';
@@ -42,6 +43,23 @@ final class ApiBursaryRepository implements BursaryRepository {
         (await _api.bursaryApplications.postApiV1BursaryApplicationsIdSubmit(
           id: id,
         )).toDomain(),
+  );
+
+  @override
+  Future<Result<void>> update(
+    String id, {
+    required Cents amount,
+    required DateTime deadline,
+    required int version,
+  }) => guard(
+    () => _api.bursaryApplications.putApiV1BursaryApplicationsId(
+      id: id,
+      body: BursaryApplicationUpdateRequest(
+        amountInCents: amount.value,
+        deadline: deadline.toUtc(),
+        version: version,
+      ),
+    ),
   );
 
   Future<List<BursaryApplication>> _page(BursaryStatus status) async {

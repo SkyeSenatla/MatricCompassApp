@@ -3,22 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:matric_compass/app/router/routes.dart';
 import 'package:matric_compass/app/widgets/failure_view.dart';
+import 'package:matric_compass/app/widgets/stale_banner.dart';
 import 'package:matric_compass/core/money/format_rands.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_status_label.dart';
 import 'package:matric_compass/features/dashboard/domain/learner_dashboard.dart';
-import 'package:matric_compass/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:matric_compass/features/dashboard/presentation/dashboard_cache.dart';
 import 'package:matric_compass/features/dashboard/presentation/dashboard_view.dart';
 
 /// Week 10 Day 2: the learner's home. It knows the controller and the domain
 /// types; it never imports a repository.
+///
+/// Week 11 Day 3: it draws from the phone's cache, and a background fetch
+/// keeps the cache current. Offline, the cached dashboard stays, with a
+/// banner saying how old it is.
 class DashboardScreen extends ConsumerWidget {
   /// Creates the screen.
   const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final view = DashboardView.from(ref.watch(dashboardControllerProvider));
-    final controller = ref.read(dashboardControllerProvider.notifier);
+    final view = DashboardView.from(
+      ref.watch(cachedDashboardProvider),
+      ref.watch(dashboardSyncProvider),
+    );
+    final sync = ref.read(dashboardSyncProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Matric Compass')),
@@ -26,15 +34,36 @@ class DashboardScreen extends ConsumerWidget {
       body: switch (view) {
         DashboardLoading() => const _LoadingList(),
         DashboardEmpty(:final fullName) => _EmptyState(fullName: fullName),
-        DashboardData(:final dashboard, :final refreshing) => RefreshIndicator(
-          onRefresh: controller.reload,
-          child: _BursaryList(dashboard: dashboard, refreshing: refreshing),
-        ),
+        DashboardData(
+          :final dashboard,
+          :final fetchedAt,
+          :final refreshing,
+          :final staleBecause,
+        ) =>
+          Column(
+            children: [
+              if (staleBecause != null)
+                StaleBanner(
+                  fetchedAt: fetchedAt,
+                  failure: staleBecause,
+                  onRetry: sync.refresh,
+                ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: sync.refresh,
+                  child: _BursaryList(
+                    dashboard: dashboard,
+                    refreshing: refreshing,
+                  ),
+                ),
+              ),
+            ],
+          ),
         // Week 11 Day 1: the Failure's words, and a reference if it's ours.
         DashboardFailure(:final error) => FailureView(
           title: "We couldn't load your dashboard.",
           error: error,
-          onRetry: controller.reload,
+          onRetry: sync.refresh,
         ),
       },
     );

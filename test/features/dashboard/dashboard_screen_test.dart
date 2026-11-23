@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:matric_compass/app/database/app_database.dart';
 import 'package:matric_compass/core/errors/failure.dart';
 import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/features/dashboard/data/dashboard_repository_provider.dart';
@@ -10,6 +11,8 @@ import 'package:matric_compass/features/dashboard/data/fake_dashboard_repository
 import 'package:matric_compass/features/dashboard/domain/dashboard_repository.dart';
 import 'package:matric_compass/features/dashboard/domain/learner_dashboard.dart';
 import 'package:matric_compass/features/dashboard/presentation/dashboard_screen.dart';
+
+import '../../support/test_database.dart';
 
 /// Never answers: the screen stays in its first load.
 class _NeverRepository implements DashboardRepository {
@@ -39,12 +42,22 @@ class _SlowFailingRepository implements DashboardRepository {
 ///
 /// The ProviderScope sits directly inside pumpWidget: riverpod_lint treats
 /// any other ProviderScope as a nested scope and asks for dependencies.
+///
+/// Week 11 Day 3: with a real database in memory, empty unless [database]
+/// is given with something already cached.
 Future<void> _pumpDashboard(
   WidgetTester tester,
-  DashboardRepository repository,
-) => tester.pumpWidget(
+  DashboardRepository repository, {
+  AppDatabase? database,
+}) => tester.pumpWidget(
   ProviderScope(
-    overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      dashboardRepositoryProvider.overrideWithValue(repository),
+      if (database == null)
+        inMemoryDatabase
+      else
+        appDatabaseProvider.overrideWithValue(database),
+    ],
     // Riverpod 3 retries a failed provider by itself, with backoff. A test
     // that wants to see the failure turns that off.
     retry: (retryCount, error) => null,
@@ -105,4 +118,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('NSFAS'), findsOneWidget);
   });
+
+  // Week 11 Day 3: what the phone had, with how old it is.
+  testWidgets('offline with a cached dashboard: the dashboard, and a banner', (
+    tester,
+  ) async {
+    final database = memoryDatabase();
+    addTearDown(database.close);
+    // Outside the test's fake clock: the fake's delay and Drift's writes
+    // both need real time.
+    await tester.runAsync(() async {
+      final cached = await FakeDashboardRepository(latency: Duration.zero)
+          .fetchDashboard();
+      await database.dashboardDao.save(
+        (cached as Ok<LearnerDashboard>).value,
+        fetchedAt: DateTime.now().toUtc(),
+      );
+    });
+
+    await _pumpDashboard(tester, _OfflineRepository(), database: database);
+    await tester.pumpAndSettle();
+
+    expect(find.text('NSFAS'), findsOneWidget);
+    expect(find.textContaining("You're offline. Last updated"), findsOneWidget);
+    expect(find.text("We couldn't load your dashboard."), findsNothing);
+  });
+}
+
+/// No answer, ever.
+class _OfflineRepository implements DashboardRepository {
+  @override
+  Future<Result<LearnerDashboard>> fetchDashboard() async =>
+      const Err(OfflineFailure());
 }

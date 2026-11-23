@@ -2,7 +2,7 @@ import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/features/bursaries/data/bursary_repository_provider.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_application.dart';
 import 'package:matric_compass/features/bursaries/presentation/bursary_application_provider.dart';
-import 'package:matric_compass/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:matric_compass/features/dashboard/presentation/dashboard_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bursary_submission.g.dart';
@@ -20,6 +20,8 @@ class BursarySubmission extends _$BursarySubmission {
   bool build(String id) => false;
 
   /// Submits, and returns the API's answer for the screen to show.
+  /// Submitting needs the server: offline it is an OfflineFailure, shown,
+  /// never queued.
   Future<Result<BursaryApplication>> submit() async {
     state = true;
     final result = await ref.read(bursaryRepositoryProvider).submit(id);
@@ -27,9 +29,10 @@ class BursarySubmission extends _$BursarySubmission {
     state = false;
     // Worked or not, the application may have changed (a 409 means it
     // already did): fetch it, and the dashboard, again.
+    // Week 11 Day 3: into the cache, which the screens watch.
     ref
-      ..invalidate(bursaryApplicationProvider(id))
-      ..invalidate(dashboardControllerProvider);
+      ..invalidate(bursarySyncProvider(id))
+      ..invalidate(dashboardSyncProvider);
     return result;
   }
 }

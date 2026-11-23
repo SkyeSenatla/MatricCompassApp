@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:matric_compass/app/app_config_provider.dart';
 import 'package:matric_compass/core/api/generated/matric_compass_api.dart';
@@ -39,7 +41,7 @@ Dio dio(Ref ref) {
       retryWith: ref.watch(bareDioProvider),
       // A refresh the API refused: the session is over.
       onSessionEnded: () =>
-          ref.read(authControllerProvider.notifier).sessionEnded(),
+          unawaited(ref.read(authControllerProvider.notifier).sessionEnded()),
     ),
   ]);
   ref.onDispose(dio.close);

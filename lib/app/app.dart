@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matric_compass/app/app_config.dart';
 import 'package:matric_compass/app/router/router_provider.dart';
+import 'package:matric_compass/app/settings/theme_setting.dart';
 import 'package:matric_compass/app/theme/app_theme.dart';
 
 /// Week 10 Day 1: the app shell.
@@ -22,6 +23,8 @@ class MatricCompassApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      // Week 11 Day 3: the person's choice, kept in SharedPreferences.
+      themeMode: ref.watch(themeSettingProvider),
       routerConfig: ref.watch(routerProvider),
       // A corner banner on every non-prod build, so a screenshot always
       // says which API it came from.

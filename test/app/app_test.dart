@@ -5,15 +5,19 @@ import 'package:matric_compass/app/app.dart';
 import 'package:matric_compass/app/app_config.dart';
 import 'package:matric_compass/app/app_config_provider.dart';
 import 'package:matric_compass/app/data_source.dart';
+import 'package:matric_compass/app/database/app_database.dart';
 import 'package:matric_compass/app/retry_policy.dart';
 import 'package:matric_compass/app/router/router_provider.dart';
+import 'package:matric_compass/app/settings/theme_setting.dart';
 import 'package:matric_compass/app/theme/status_colors.dart';
 import 'package:matric_compass/core/fakes/fake_latency_provider.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
 import 'package:matric_compass/features/auth/data/fake_personas.dart';
 import 'package:matric_compass/features/auth/presentation/auth_controller.dart';
 import 'package:matric_compass/features/careers/presentation/careers_overview_provider.dart';
-import 'package:matric_compass/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:matric_compass/features/dashboard/presentation/dashboard_cache.dart';
+
+import '../support/test_database.dart';
 
 const _config = AppConfig(flavor: Flavor.prod, apiBaseUrl: 'https://x');
 const _phone = Size(400, 800);
@@ -51,6 +55,9 @@ Future<ProviderContainer> _pumpApp(
       // Week 11 Day 2: the sign-in and profile screens read the flavour,
       // as main() provides it. Prod: no dev-only tools in these tests.
       appConfigProvider.overrideWithValue(_config),
+      // Week 11 Day 3: the phone's database, in memory, and its settings.
+      inMemoryDatabase,
+      settingsStoreProvider.overrideWithValue(InMemorySettingsStore()),
     ],
     // The app's own policy, as main() uses it.
     retry: appRetryPolicy,
@@ -181,8 +188,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Her screens' state went with her session.
-      expect(container.exists(dashboardControllerProvider), isFalse);
+      expect(container.exists(dashboardSyncProvider), isFalse);
       expect(container.exists(careersOverviewProvider), isFalse);
+      // Week 11 Day 3: and her rows went with the database.
+      final database = container.read(appDatabaseProvider);
+      expect(await database.dashboardDao.read(), isNull);
 
       await _signInWithForm(tester, FakePersonas.counsellor.email);
       expect(find.text('NSFAS'), findsNothing);

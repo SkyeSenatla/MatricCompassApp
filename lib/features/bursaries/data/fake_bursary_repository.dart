@@ -1,6 +1,7 @@
 import 'package:matric_compass/core/errors/failure.dart';
 import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/fakes/seed.dart';
+import 'package:matric_compass/core/money/cents.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_application.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_repository.dart';
 import 'package:matric_compass/features/bursaries/domain/bursary_status.dart';
@@ -71,6 +72,42 @@ final class FakeBursaryRepository implements BursaryRepository {
     );
     _applications[_applications.indexOf(application)] = submitted;
     return Ok(submitted);
+  }
+
+  /// Week 11 Day 3: the API's rules for an edit: a Draft only, and the
+  /// version must be the current one.
+  @override
+  Future<Result<void>> update(
+    String id, {
+    required Cents amount,
+    required DateTime deadline,
+    required int version,
+  }) async {
+    await Future<void>.delayed(latency);
+    final application = _find(id);
+    if (application == null) return const Err(NotFoundFailure());
+    if (application.status != BursaryStatus.draft ||
+        application.version != version) {
+      return const Err(
+        ConflictFailure(detail: 'This application changed elsewhere.'),
+      );
+    }
+    _applications[_applications.indexOf(application)] = application.copyWith(
+      amount: amount,
+      deadline: deadline,
+      version: application.version + 1,
+    );
+    return const Ok(null);
+  }
+
+  /// Week 11 Day 3: a counsellor's edit somewhere else, as this fake sees
+  /// it: the same application with a new version. Tests use it to make a
+  /// learner's edit stale.
+  void changeElsewhere(String id) {
+    final application = _applications.firstWhere((a) => a.id == id);
+    _applications[_applications.indexOf(application)] = application.copyWith(
+      version: application.version + 1,
+    );
   }
 
   BursaryApplication? _find(String id) {

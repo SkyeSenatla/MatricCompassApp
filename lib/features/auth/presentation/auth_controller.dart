@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:matric_compass/app/app_config.dart';
 import 'package:matric_compass/app/app_config_provider.dart';
 import 'package:matric_compass/app/data_source.dart';
+import 'package:matric_compass/app/database/app_database.dart';
 import 'package:matric_compass/core/errors/failure.dart';
 import 'package:matric_compass/core/errors/result.dart';
 import 'package:matric_compass/core/network/access_token.dart';
@@ -42,12 +43,30 @@ class AuthController extends _$AuthController {
     state = const Restoring();
     final outcome = await ref.read(sessionProvider).refresh();
     if (!ref.mounted) return;
-    state = switch (outcome) {
-      Refreshed(:final token) => _signedInAs(token),
-      SessionEnded() => const SignedOut(),
-      // No network is not "signed out": keep the session and wait.
-      RefreshUnavailable() => const Restoring(offline: true),
-    };
+    final database = ref.read(appDatabaseProvider);
+    switch (outcome) {
+      case Refreshed(:final token):
+        final next = _signedInAs(token);
+        // Week 11 Day 3: remembered, for a launch with no signal.
+        if (next case SignedIn(:final user)) {
+          await database.sessionUserDao.save(user);
+        }
+        if (ref.mounted) state = next;
+      case SessionEnded():
+        // Week 11 Day 3: a session that's over leaves no cache behind.
+        await database.wipe();
+        if (ref.mounted) state = const SignedOut();
+      case RefreshUnavailable():
+        // No network is not "signed out". Week 11 Day 3: if we know who
+        // last signed in, open as them on cached data. The first request
+        // that gets through refreshes the session, or ends it.
+        final last = await database.sessionUserDao.read();
+        if (!ref.mounted) return;
+        state = switch (last) {
+          final user? => SignedIn(user),
+          null => const Restoring(offline: true),
+        };
+    }
   }
 
   /// Signs in with [email] and [password].
@@ -57,9 +76,11 @@ class AuthController extends _$AuthController {
   /// as Err.
   Future<Result<AppUser>> signIn(String email, String password) async {
     final wanted = email.trim().toLowerCase();
+    final database = ref.read(appDatabaseProvider);
     if (_onFakes) {
       for (final persona in FakePersonas.all) {
         if (persona.email == wanted) {
+          await database.wipe();
           state = SignedIn(persona);
           return Ok(persona);
         }
@@ -73,6 +94,10 @@ class AuthController extends _$AuthController {
       case Ok(value: final token):
         final signedIn = _signedInAs(token);
         if (signedIn case SignedIn(:final user)) {
+          // Week 11 Day 3: a sign-in always starts from an empty phone, then
+          // remembers who it is, for a launch with no signal.
+          await database.wipe();
+          await database.sessionUserDao.save(user);
           state = signedIn;
           return Ok(user);
         }
@@ -87,20 +112,25 @@ class AuthController extends _$AuthController {
   /// The state changes at once: every user-scoped provider watches this
   /// one, so their data goes with it, and the redirect moves to sign-in.
   /// The session then wipes the tokens and tells the API.
+  ///
+  /// Week 11 Day 3: and the database: every cached row and pending edit.
+  /// The next person on this phone sees none of it, even offline.
   Future<void> signOut() async {
-    if (_onFakes) {
-      state = const SignedOut();
-      return;
-    }
-    final ending = ref.read(sessionProvider).signOut();
+    final ending = _onFakes
+        ? Future<void>.value()
+        : ref.read(sessionProvider).signOut();
     state = const SignedOut();
+    await ref.read(appDatabaseProvider).wipe();
     await ending;
   }
 
   /// The API refused a refresh in the middle of a session: sign in again.
   /// The redirect remembers the address they were on.
-  void sessionEnded() {
+  ///
+  /// Week 11 Day 3: the session is over, so its cache goes too.
+  Future<void> sessionEnded() async {
     if (state is! SignedOut) state = const SignedOut();
+    await ref.read(appDatabaseProvider).wipe();
   }
 
   /// Dev flavour only: spoils the access token's signature, so the next
